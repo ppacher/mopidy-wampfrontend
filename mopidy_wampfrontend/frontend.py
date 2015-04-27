@@ -73,10 +73,20 @@ class WAMPFrontendComponent(wamp.ApplicationSession):
 	self.config.extra['frontend'].connect()
 
 
+def url_to_client_string(url):
+	if url.split(":")[0] in [ "ws" ]:
+		proto = "tcp"
+	elif url.split(":")[0] in [ "wss" ]:
+		proto = "ssl"
+
+	host_port = url.split("/")[2]
+	return "%s:%s" % (proto, host_port)
+
 class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
 	def __init__(self, config, core):
 		super(WAMPFrontend, self).__init__()
 		self.core = core
+		self.config = config
 		logger.info("Loaded WAMPFrontend")
 
 	def on_start(self):
@@ -89,15 +99,15 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
 		log.startLogging(sys.stdout)
 
 		# 1) create a WAMP application session factory
-		component_config = types.ComponentConfig(realm="realm1", extra={'core': self.core, 'frontend': self.actor_ref.proxy()} )
+		component_config = types.ComponentConfig(realm=self.conifg['wampfrontend']['realm'], extra={'core': self.core, 'frontend': self.actor_ref.proxy()} )
 		session_factory = wamp.ApplicationSessionFactory(config=component_config)
 		session_factory.session = WAMPFrontendComponent	
 
-		transport_factory = websocket.WampWebSocketClientFactory(session_factory, url='ws://127.0.0.1:8080/ws', debug=False, debug_wamp=False)	
+		transport_factory = websocket.WampWebSocketClientFactory(session_factory, url=self.config['wampfrontend']["router"], debug=False, debug_wamp=False)	
 		logger.info("WAMPFrontend: WampWebSocketClientFactory created")
 
 		# 3) start the client from a Twisted endpoint
-		client = clientFromString(self.reactor, "tcp:127.0.0.1:8080")
+		client = clientFromString(self.reactor, url_to_client_string(self.config['wampfrontend']["router"]))
 		client.connect(transport_factory)
 		
 		th = Thread(target=self.run_ioloop)

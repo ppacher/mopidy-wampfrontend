@@ -30,9 +30,8 @@ class Extension(ext.Extension):
 
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
-        # TODO: Comment in and edit, or remove entirely
-        #schema['username'] = config.String()
-        #schema['password'] = config.Secret()
+	schema['router'] = config.String(optional=True)
+	schema['realm'] = config.String(optional=True)
         return schema
 
     def setup(self, registry):
