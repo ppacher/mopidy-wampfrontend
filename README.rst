@@ -18,7 +18,9 @@ Mopidy-WAMPFrontend
    :target: https://coveralls.io/r/nethack42/mopidy-wampfrontend?branch=master
    :alt: Test coverage
 
-Mopidy extension providing a WAMP frontend
+This extension provides a WAMP frontend for the popular Mopidy music server by connecting to a WAMP enabled router such as `crossbar.io <http://crossbar.io>`. Based on the jsonrpc module shipped with mopidy the whole API is exposed to the WAMP router as Remote Procedure Calls (RPC). Mopidy events will also be published on the WAMP router.
+
+   This extension does NOT include a WAMP (Web Application Messaging Protocol) router. 
 
 
 Installation
@@ -39,7 +41,11 @@ Before starting Mopidy, you must add configuration for
 Mopidy-WAMPFrontend to your Mopidy configuration file::
 
     [wampfrontend]
-    # TODO: Add example of extension config
+    enabled = true
+    router = ws://127.0.0.1:8080/ws
+    debug_wamp = false
+    debug_autobahn = false
+    enable_twisted_log = false
 
 
 Project resources
