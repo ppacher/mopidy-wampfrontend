@@ -34,6 +34,7 @@ Currently the following features have been implemented:
 - WebSocket and WebSocket-over-SSL is supported
 - Raw-TCP socket support
 - Debug options for WAMP and autobahn
+- Mopidy events are published to the WAMP router
 
 
 Problems & Missing Features
@@ -45,7 +46,6 @@ In order for a final 1.0 release, the following problems must be solved and miss
 - WAMP Authentication is currently not supported
 - Currently based on the mopidy core.utils.jsonrpc which (according to Mopidy documentation) is a bad idea
 - Add support to reconnect the WAMP client on ConnectionLost or ConnectionFailed
-- Publish Mopidy events to the WAMP router
 
 Installation
 ============
