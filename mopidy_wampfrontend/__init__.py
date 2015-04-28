@@ -3,20 +3,12 @@ from __future__ import unicode_literals
 import logging
 import os
 
-# TODO: Remove entirely if you don't register GStreamer elements below
-import pygst
-pygst.require('0.10')
-import gst
-import gobject
-
 from mopidy import config, ext
 
 
 __version__ = '0.1.0'
 
-# TODO: If you need to log, use loggers named after the current Python module
 logger = logging.getLogger(__name__)
-
 
 class Extension(ext.Extension):
 
@@ -32,12 +24,11 @@ class Extension(ext.Extension):
         schema = super(Extension, self).get_config_schema()
 	schema['router'] = config.String(optional=True)
 	schema['realm'] = config.String(optional=True)
+	schema['debug_wamp'] = config.Boolean(optional=True)
+	schema['debug_autobahn'] = config.Boolean(optional=True)
+	schema['enable_twisted_log'] = config.Boolean(optional=True)
         return schema
 
     def setup(self, registry):
-        # You will typically only implement one of the following things
-        # in a single extension.
-
-        # TODO: Edit or remove entirely
         from .frontend import WAMPFrontend
         registry.add('frontend', WAMPFrontend)

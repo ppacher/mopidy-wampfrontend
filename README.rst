@@ -23,6 +23,28 @@ This extension provides a WAMP frontend for the popular Mopidy music server by c
    This extension does NOT include a WAMP (Web Application Messaging Protocol) router. 
 
 
+Features
+========
+
+Currently the following features have been implemented:
+
+ - Complete mopidy core API is exposed to the WAMP router
+ - WAMP realm is configurable via mopidy config
+ - WebSocket and WebSocket-over-SSL is supported
+ - Raw-TCP socket support
+ - Debug options for WAMP and autobahn
+
+
+Problems & Missing Features
+===========================
+
+In order for a final 1.0 release, the following problems must be solved and missing features must be implemented:
+
+ - Use a global IOLoop instead of a local TornadoReactor (for twisted support). This might require a change in the current Mopidy-HTTP frontend. 
+ - WAMP Authentication is currently not supported
+ - Currently based on the mopidy core.utils.jsonrpc which (according to Mopidy documentation) is a bad idea
+
+
 Installation
 ============
 
@@ -50,7 +72,6 @@ Mopidy-WAMPFrontend to your Mopidy configuration file::
 
 Project resources
 =================
-
 - `Source code <https://github.com/nethack42/mopidy-wampfrontend>`_
 - `Issue tracker <https://github.com/nethack42/mopidy-wampfrontend/issues>`_
 - `Development branch tarball <https://github.com/nethack42/mopidy-wampfrontend/archive/master.tar.gz#egg=Mopidy-WAMPFrontend-dev>`_
