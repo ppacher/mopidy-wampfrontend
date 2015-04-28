@@ -18,7 +18,8 @@ Mopidy-WAMPFrontend
    :target: https://coveralls.io/r/nethack42/mopidy-wampfrontend?branch=master
    :alt: Test coverage
 
-This extension provides a WAMP frontend for the popular Mopidy music server by connecting to a WAMP enabled router such as `crossbar.io <http://crossbar.io>`. Based on the jsonrpc module shipped with mopidy the whole API is exposed to the WAMP router as Remote Procedure Calls (RPC). Mopidy events will also be published on the WAMP router.
+This extension provides a WAMP frontend for the popular Mopidy music server by connecting to a WAMP enabled router such as `crossbar.io
+<http://crossbar.io/>`_. Based on the jsonrpc module shipped with mopidy the whole API is exposed to the WAMP router as Remote Procedure Calls (RPC). Mopidy events will also be published on the WAMP router.
 
    This extension does NOT include a WAMP (Web Application Messaging Protocol) router. 
 
@@ -43,13 +44,14 @@ In order for a final 1.0 release, the following problems must be solved and miss
 - Use a global IOLoop instead of a local TornadoReactor (for twisted support). This might require a change in the current Mopidy-HTTP frontend. 
 - WAMP Authentication is currently not supported
 - Currently based on the mopidy core.utils.jsonrpc which (according to Mopidy documentation) is a bad idea
-
+- Add support to reconnect the WAMP client on ConnectionLost or ConnectionFailed
+- Publish Mopidy events to the WAMP router
 
 Installation
 ============
 
 Install by running::
-
+u
     pip install Mopidy-WAMPFrontend
 
 Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
