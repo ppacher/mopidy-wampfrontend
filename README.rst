@@ -51,7 +51,7 @@ Installation
 ============
 
 Install by running::
-u
+
     pip install Mopidy-WAMPFrontend
 
 Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
