@@ -15,10 +15,9 @@ from autobahn.twisted import wamp, websocket
 from autobahn.wamp import types
 
 from threading import Thread, currentThread
-from Queue import Queue, Empty as QueueEmpty
 
 from mopidy import core, models
-from mopidy.utils import jsonrpc
+from mopidy.utils import jsonrpc     # XXX Mopidy developers don't want extensions to use this ....
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +86,10 @@ class WAMPFrontendComponent(wamp.ApplicationSession):
     @inlineCallbacks
     def on_event(self, event, **kwargs):
         logger.info("WAMPFrontend: Publishing event '%s' %s" % (event, kwargs))
-        yield self.publish(event, kwargs)
+        yield self.publish(
+               event, 
+               json.loads(
+                   json.dumps(kwargs, cls=jsonrpc.get_combined_json_encoder([models.ModelJSONEncoder]))))
 
     def onDisconnect(self):
 	''' Executed on disconnect '''
@@ -121,6 +123,7 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         self._loop = None
         self._reactor = None
         self._session = None
+        self._ioloop_thread = None
 
 
     def on_start(self):
@@ -137,10 +140,42 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         th.deamon = True
         th.start()
 
+        self._ioloop_thread = th
+
 	self.schedule( self.client_connect )
 
 
+    def on_failure(self, exception_type, exception_value, traceback):
+        ''' called in case an exception has been thrown '''
+        if self._loop and self._ioloop_thread.isAlive():
+            self._stop_local_ioloop()
+
+
+    def on_stop(self):
+        logger.info("WAMPFrontend stopping ...")
+        self._stop_local_ioloop()
+
+
+    def on_event(self, event, **kwargs):
+        ''' Schedule an incoming mopidy event to be published '''
+        if self._session._client:
+             self.schedule( self._session._client.on_event, event, **kwargs )
+             logger.debug("WAMPFrontend: scheduled event publishing for %s" % event)
+
+
+    def schedule(self, function, *args, **kwargs):
+        ''' Schedule a function to be called during the next IOLoop iteration '''
+        assert self._loop, \
+           'WAMPFrontend has not been started yet. Unable to run IOLoop'
+        assert isinstance(self._loop, IOLoop), \
+           'WAMPFrontend: Invalid local IO-loop type: %s' % type(self._loop)
+        logger.debug('WAMPFrontend: scheduled call for IOLoop: %s' % function)
+        self._loop.add_callback( function, *args, **kwargs )
+        
+        
     def client_connect(self):
+        assert currentThread() == self._ioloop_thread, \
+            'WAMPFrontend: client_connect() can only be called by the IOLoop thread. Current Thread: %s' % (currentThread())
         client = clientFromString(self._reactor, url_to_client_string(self.config['wampfrontend']["router"]))
         transport = self._prepare_transport()
         logger.info('WAMPFrontend: connecting client (from thread: %s)' % currentThread()) 
@@ -229,24 +264,3 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
             loop._waker.wake()
         except Exception as e:
             logger.warn('WAMPFrontend: cought exception on IOLoop._waker.wake(): %s' % e)
-
-
-    def schedule(self, function, *args, **kwargs):
-        ''' Schedule a function to be called during the next IOLoop iteration '''
-        assert self._loop, \
-           'WAMPFrontend has not been started yet. Unable to run IOLoop'
-        assert isinstance(self._loop, IOLoop), \
-           'WAMPFrontend: Invalid local IO-loop type: %s' % type(self._loop)
-        logger.debug('WAMPFrontend: scheduled call for IOLoop: %s' % function)
-        self._loop.add_callback( function, *args, **kwargs )
-        
-        
-    def on_stop(self):
-        logger.info("WAMPFrontend stopping ...")
-        self._stop_local_ioloop()
-
-    def on_event(self, event, **kwargs):
-        ''' Queue an incoming mopidy event to be published '''
-        if self._session._client:
-             self.schedule( self._session._client.on_event, event, **kwargs )
-             logger.debug("WAMPFrontend: scheduled event publishing for %s" % event)
