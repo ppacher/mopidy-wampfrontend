@@ -25,6 +25,7 @@ from tornado.platform.twisted import TornadoReactor
 from twisted.python import log
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.endpoints import clientFromString
+from twisted.internet.protocol import ReconnectingClientFactory
 
 from autobahn.twisted import wamp, websocket
 from autobahn.wamp import types
@@ -121,6 +122,16 @@ def url_to_client_string(url):
 
     host_port = url.split("/")[2]
     return "%s:%s" % (proto, host_port)
+
+
+class MyClientFactory(websocket.WampWebSocketClientFactory):
+    def clientConnectionFailed(self, connector, reason):
+	logger.info("Reconnecting ..:")
+        ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
+ 
+    def clientConnectionLost(self, connector, reason):
+	logger.info("Reconnecting ...")
+        ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
 
 class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
@@ -220,7 +231,7 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         # Now also store a reference to the session factory for us
         self._session = session
         
-        transport = websocket.WampWebSocketClientFactory(
+        transport = MyClientFactory(
             session,
             url = self.config['wampfrontend']['router'],
             debug = self.config['wampfrontend']['debug_autobahn'],
