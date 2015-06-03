@@ -37,11 +37,12 @@ class Extension(ext.Extension):
 
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
-	schema['router'] = config.String(optional=True)
-	schema['realm'] = config.String(optional=True)
-	schema['debug_wamp'] = config.Boolean(optional=True)
-	schema['debug_autobahn'] = config.Boolean(optional=True)
-	schema['enable_twisted_log'] = config.Boolean(optional=True)
+        schema['router'] = config.String(optional=True)
+        schema['name'] = config.String(optional=True)
+        schema['realm'] = config.String(optional=True)
+        schema['debug_wamp'] = config.Boolean(optional=True)
+        schema['debug_autobahn'] = config.Boolean(optional=True)
+        schema['enable_twisted_log'] = config.Boolean(optional=True)
         return schema
 
     def setup(self, registry):

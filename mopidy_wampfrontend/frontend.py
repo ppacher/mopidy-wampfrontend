@@ -99,7 +99,8 @@ class WAMPFrontendComponent(wamp.ApplicationSession):
         count = 0
         yield self.register(inspector.describe, 'core.describe')
         for func in inspector.describe().keys():
-            yield self.register(ResultWrapper(wrapper._get_method(func)).get, func)
+            func_name = self.config.extra['name'] + func[len('core'):]
+            yield self.register(ResultWrapper(wrapper._get_method(func)).get, func_name)
             count = count + 1
         logger.info("WAMPFrontend: Registered %d API calls" % count)
 
@@ -211,6 +212,7 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         config = types.ComponentConfig(
             realm = self.config['wampfrontend']['realm'],
             extra = {
+                'name': self.config['wampfrontend']['name'],
                 'core': self.core,
                 'frontend': self })
         session = wamp.ApplicationSessionFactory(config=config)
