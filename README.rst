@@ -64,6 +64,7 @@ Mopidy-WAMPFrontend to your Mopidy configuration file::
 
     [wampfrontend]
     enabled = true
+    name = mopidy
     router = ws://127.0.0.1:8080/ws
     debug_wamp = false
     debug_autobahn = false
@@ -80,7 +81,14 @@ Project resources
 Changelog
 =========
 
-v0.1.0 (UNRELEASED)
+v0.2.0
+----------------------------------------
+
+- Support for auto-reconnect added
+- Switched from a local IO loop to use the global IOLoop started by the HTTP-Frontend
+- Mopidy instances can now be named (fixed #2)
+
+v0.1.0 
 ----------------------------------------
 
 - Initial release.
