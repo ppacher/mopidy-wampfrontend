@@ -33,7 +33,11 @@ from autobahn.wamp import types
 from threading import Thread, currentThread
 
 from mopidy import core, models
-from mopidy.utils import jsonrpc     # XXX Mopidy developers don't want extensions to use this ....
+
+try:
+    from mopidy.utils import jsonrpc     # XXX Mopidy developers don't want extensions to use this ....
+except:
+    from mopidy.internal import jsonrpc # with upcomming commit d8bcd7f273 utils is renamed to internal
 
 logger = logging.getLogger(__name__)
 
@@ -108,10 +112,10 @@ class WAMPFrontendComponent(wamp.ApplicationSession):
                    json.dumps(kwargs, cls=jsonrpc.get_combined_json_encoder([models.ModelJSONEncoder]))))
 
     def onDisconnect(self):
-	''' Executed on disconnect '''
+        ''' Executed on disconnect '''
         logger.info("WAMPFrontend: connection to WAMP router lost")
         self.factory._client = None
-	self.config.extra['frontend'].schedule( self.config.extra['frontend'].client_connect )
+        self.config.extra['frontend'].schedule( self.config.extra['frontend'].client_connect )
 
 
 def url_to_client_string(url):
@@ -126,11 +130,11 @@ def url_to_client_string(url):
 
 class MyClientFactory(websocket.WampWebSocketClientFactory):
     def clientConnectionFailed(self, connector, reason):
-	logger.info("Reconnecting ..:")
+        logger.info("Reconnecting ..:")
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
  
     def clientConnectionLost(self, connector, reason):
-	logger.info("Reconnecting ...")
+        logger.info("Reconnecting ...")
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
 
@@ -160,26 +164,13 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         if self.config["wampfrontend"]["enable_twisted_log"]:
             log.startLogging(sys.stdout)
 
-        self._prepare_local_ioloop()
-        
-        th = Thread(target=self._run_local_ioloop)
-        th.deamon = True
-        th.start()
-
-        self._ioloop_thread = th
-
-	self.schedule( self.client_connect )
-
-
-    def on_failure(self, exception_type, exception_value, traceback):
-        ''' called in case an exception has been thrown '''
-        if self._loop and self._ioloop_thread.isAlive():
-            self._stop_local_ioloop()
+        self._loop = IOLoop.instance()
+        self._reactor = TornadoReactor(self._loop)
+        self.schedule( self.client_connect )
 
 
     def on_stop(self):
         logger.info("WAMPFrontend stopping ...")
-        self._stop_local_ioloop()
 
 
     def on_event(self, event, **kwargs):
@@ -200,8 +191,6 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         
         
     def client_connect(self):
-        assert currentThread() == self._ioloop_thread, \
-            'WAMPFrontend: client_connect() can only be called by the IOLoop thread. Current Thread: %s' % (currentThread())
         client = clientFromString(self._reactor, url_to_client_string(self.config['wampfrontend']["router"]))
         transport = self._prepare_transport()
         logger.info('WAMPFrontend: connecting client (from thread: %s)' % currentThread()) 
@@ -238,55 +227,3 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
             debug_wamp = self.config['wampfrontend']['debug_wamp'])
         return transport
 
-
-    def _prepare_local_ioloop(self):
-        ''' Prepare the local Torando IOLoop used for the  twisted TornadoReactor '''
-        assert not self._loop, \
-            'WAMPFrontend: local IOLoop already initialized'
-        try:
-            self._loop = IOLoop()
-        except Exception as e:
-            logger.warn('WAMPFrontend: unable to create a local IOLoop: %s' % e)
-            raise e
-
-        try:
-            self._reactor = TornadoReactor(self._loop)
-        except Exception as e:
-            logger.warn('WAMPFrontend: unable to create local TornadoReactor: %s' % e)
-            raise e
-
-        
-    def _run_local_ioloop(self):
-        ''' Start the local IOLoop in a separate thread '''
-        assert self._loop, \
-           'WAMPFrontend has not been started yet. Unable to run IOLoop'
-        assert isinstance(self._loop, IOLoop), \
-           'Invalid local IO-loop type: %s' % type(self._loop)
-        loop = self._loop
-        try:
-            logger.info('WAMPFrontend: Starting local IOloop (%s) in thread %s' % (repr(loop), currentThread()))
-            loop.start()
-        except Exception as e:
-            logger.warn('WAMPFrontend: cought exception on IOLoop.start(): %s' % e)
-        finally: 
-       	    logger.info("WAMPFrontend: Local IOLoop stopped. Closing it ...")
-            loop.close()
-            if self._loop:
-                self._loop = None
-
-
-    def _stop_local_ioloop(self):
-        ''' Request the local IOLoop to stop '''
-        assert self._loop, \
-           'WAMPFrontend: frontend has not been started yet. Unable to stop IOLoop'
-        assert isinstance(self._loop, IOLoop), \
-           'WAMPFrontend: Invalid local IO-loop type: %s' % type(self.loop)
-
-        loop = self._loop
-        self._loop = None
-        loop.add_callback(loop.stop)
-        logger.info("WAMPFrontend: stopping local IOLoop ...")
-        try:
-            loop._waker.wake()
-        except Exception as e:
-            logger.warn('WAMPFrontend: cought exception on IOLoop._waker.wake(): %s' % e)
