@@ -42,10 +42,8 @@ Problems & Missing Features
 
 In order for a final 1.0 release, the following problems must be solved and missing features must be implemented:
 
-- Use a global IOLoop instead of a local TornadoReactor (for twisted support). This might require a change in the current Mopidy-HTTP frontend. 
 - WAMP Authentication is currently not supported
 - Currently based on the mopidy core.utils.jsonrpc which (according to Mopidy documentation) is a bad idea
-- Add support to reconnect the WAMP client on ConnectionLost or ConnectionFailed
 
 Installation
 ============

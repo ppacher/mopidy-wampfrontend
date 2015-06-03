@@ -112,7 +112,7 @@ class WAMPFrontendComponent(wamp.ApplicationSession):
                    json.dumps(kwargs, cls=jsonrpc.get_combined_json_encoder([models.ModelJSONEncoder]))))
 
     def onDisconnect(self):
-        ''' Executed on disconnect '''
+        ''' Executed on disconnect. Trigger a re-connection '''
         logger.info("WAMPFrontend: connection to WAMP router lost")
         self.factory._client = None
         self.config.extra['frontend'].schedule( self.config.extra['frontend'].client_connect )
@@ -194,8 +194,14 @@ class WAMPFrontend(pykka.ThreadingActor, core.CoreListener):
         client = clientFromString(self._reactor, url_to_client_string(self.config['wampfrontend']["router"]))
         transport = self._prepare_transport()
         logger.info('WAMPFrontend: connecting client (from thread: %s)' % currentThread()) 
-        client.connect(transport)
- 
+        d = client.connect(transport)
+        def on_success(result):
+            pass
+        def on_error(result):
+            logger.warn("WAMPFrontend: %s" % result)
+            self._reactor.callLater(2, self.client_connect)
+
+        d.addCallbacks(on_success, on_error) 
 
     def _prepare_transport(self):
         ''' Prepare a transport factory '''
